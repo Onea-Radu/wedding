@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wedding Invitation</title>
+<style>
+    body {
+        font-family: 'Georgia', serif;
+        background: #f8e8e8;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    .envelope {
+        width: 350px;
+        height: 280px;
+        background: #d4a373;
+        position: relative;
+        cursor: pointer;
+        border-radius: 5px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+        perspective: 1200px;
+        overflow: visible;
+        transition: transform 1400ms ease, opacity 1400ms ease;
+    }
+
+    .top-flap {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(180deg,#edc39a,#e6b17e);
+        position: absolute;
+        top: 0;
+        transform-origin: left center;
+        transform: rotateY(0deg);
+        transition: transform 800ms cubic-bezier(.2,.9,.28,1);
+        z-index: 3;
+        box-shadow: inset 0 -6px 10px rgba(0,0,0,0.06);
+    }
+
+    .card {
+        width: 440px;
+        height: 572px;
+        background: #f8e8e8;
+        position: absolute;
+        left: 50%;
+        bottom: -382px; /* start mostly hidden in the pocket (scaled) */
+        transform: translateX(-50%) translateY(0);
+        --card-padding: 36px;
+        padding: var(--card-padding);
+        text-align: center;
+        border-radius: 8px;
+        transition: transform 900ms cubic-bezier(.2,.9,.28,1), box-shadow 300ms;
+        z-index: 1;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+        box-sizing: border-box;
+        overflow: hidden;
+        position: relative;
+        perspective: 1200px;
+    }
+
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('front.jpeg') center / cover no-repeat;
+        opacity: 0.6;
+        pointer-events: none;
+        border-radius: 8px;
+        z-index: 2;
+        transform: rotateX(0deg);
+        transform-origin: top center;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        transition: transform var(--front-flip-duration,2000ms) cubic-bezier(.2,.9,.28,1);
+    }
+
+    /* back image layer (revealed when .back-up) - flip horizontally */
+    .card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('back.jpeg') center / cover no-repeat;
+        border-radius: 8px;
+        z-index: 1;
+        transform: rotateY(180deg);
+        transform-origin: center;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        transition: transform var(--back-flip-duration,1200ms) cubic-bezier(.2,.9,.28,1);
+    }
+
+    /* If an image would be upscaled or its aspect ratio differs significantly
+       from the card, prefer `contain` to avoid cropping. JS toggles
+       `.use-contain` when needed. */
+    .card.use-contain::after,
+    .card.use-contain::before,
+    .card.use-contain .card-face {
+        background-size: contain !important;
+        background-repeat: no-repeat !important;
+        background-position: center center !important;
+        background-color: #f8e8e8; /* avoids visible empty areas */
+    }
+
+    /* Flip timing variables and subtle depth/scale for the back reveal */
+    .card {
+        --front-flip-duration: 2000ms;
+        --back-flip-duration: 1200ms;
+    }
+
+    /* front lifted like tracing paper */
+    .card.front-up::before {
+        transform: rotateX(180deg);
+        z-index: 3;
+    }
+
+    /* when revealing the back, rotate the front away on Y and bring the back and background forward */
+    .card.back-up::before {
+        transform: rotateY(180deg);
+        transform-origin: center;
+        z-index: 1;
+    }
+
+    .card.back-up::after {
+        transform: rotateY(0deg);
+        z-index: 3;
+    }
+
+    /* rotate the background/card-face together with the back flip */
+    .card.back-up .card-face {
+        /* rotate and scale the card face slightly for depth */
+        transform: rotateY(180deg) scale(1.02);
+    }
+
+    /* make the card full-bleed when showing the back: remove padding/border-radius */
+    .card.back-up {
+        padding: 0;
+        border-radius: 0;
+        /* allow the expanded pseudo-elements to show beyond the card box */
+        overflow: visible;
+        /* soften shadow during back reveal */
+    }
+
+    .card.back-up .card-face {
+        border-radius: 0;
+    }
+
+    /* When showing the back, expand the visual layers out by the padding
+       amount so the back appears full-bleed while the card keeps its padding
+       (avoids layout shift that moved the back image slightly down). */
+    .card.back-up::before,
+    .card.back-up::after,
+    .card.back-up .card-face {
+        inset: calc(-1 * var(--card-padding));
+    }
+
+    /* Hide the front overlay quickly when flipping to the back to avoid
+       additive opacity/glare making the back look blown-out. */
+    .card.back-up::before {
+        opacity: 0;
+        transition: opacity 160ms linear;
+    }
+
+    .card h1,
+    .card h2,
+    .card p {
+        display: none;
+    }
+
+    .open .top-flap {
+        transform: rotateY(-160deg);
+    }
+
+    /* card slides out to the right when opening */
+    .open .card {
+        /* move the card out to the right but keep it closer to center */
+        transform: translateX(calc(-50% + 180px)) translateY(-360px) rotate(-1deg);
+        box-shadow: 0 22px 40px rgba(0,0,0,0.28);
+        z-index: 4;
+    }
+
+    /* allow the card to show outside the pocket when open */
+    .open .pocket { overflow: visible; }
+
+    /* envelope moves left and fades away after card is out (class added by JS) */
+    .envelope.move-away {
+        transform: translateX(-120px) rotateZ(-1deg);
+        opacity: 0.18;
+    }
+
+    /* pocket masks the card when closed */
+    .pocket {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+        border-radius: 5px;
+        z-index: 2;
+    }
+
+    /* when card is detached it should sit above everything */
+    .card.floating {
+        z-index: 9999;
+        box-shadow: 0 28px 60px rgba(0,0,0,0.32);
+    }
+
+    /* the main face that holds the background image and content; rotates with back flips */
+    .card .card-face {
+        position: absolute;
+        inset: 0;
+        border-radius: 8px;
+        background: url('background.jpeg') center / cover no-repeat;
+        z-index: 1;
+        transform: rotateY(0deg);
+        transform-origin: center;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        transition: transform 2000ms cubic-bezier(.2,.9,.28,1);
+    }
+
+    
+
+    /* close button - visible when card is detached/floating */
+    .card .close-btn {
+        display: none;
+        background: transparent;
+        border: none;
+        font-size: 20px;
+        line-height: 1;
+        padding: 6px;
+        cursor: pointer;
+    }
+
+    .card.floating .close-btn {
+        display: block;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #fff;
+        border: 1px solid rgba(0,0,0,0.08);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: #555;
+    }
+
+    /* reveal-back button (visible when detached/floating) */
+    .card .next-btn {
+        display: none;
+        background: transparent;
+        border: none;
+        font-size: 18px;
+        line-height: 1;
+        padding: 6px;
+        cursor: pointer;
+    }
+
+    .card.floating .next-btn {
+        display: block;
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #fff;
+        border: 1px solid rgba(0,0,0,0.08);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #555;
+    }
+
+    .card.floating .close-btn:focus {
+        outline: 3px solid rgba(180,111,111,0.18);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 720px) {
+        .envelope { width: 320px; height: 260px; }
+        .card { width: 384px; height: 500px; bottom: -330px; }
+        .open .card { transform: translateX(calc(-50% + 170px)) translateY(-320px) rotate(-1deg); }
+        .envelope.move-away { transform: translateX(-110px) rotateZ(-1deg); }
+    }
+
+    @media (max-width: 480px) {
+        .envelope { width: 280px; height: 260px; }
+        .top-flap { transform-origin: left center; }
+        .card { width: 360px; height: 468px; bottom: -300px; --card-padding: 28px; padding: var(--card-padding); }
+        .card h1 { font-size: 20px; }
+        .card h2 { font-size: 18px; }
+        .open .card { transform: translateX(calc(-50% + 140px)) translateY(-290px) rotate(-1deg); }
+        .envelope.move-away { transform: translateX(-66px) rotateZ(-1deg); opacity: 0.22; }
+    }
+
+    @media (max-width: 360px) {
+        .envelope { width: 240px; height: 260px; }
+        .card { width: 300px; height: 390px; bottom: -240px; --card-padding: 20px; padding: var(--card-padding); }
+        .open .card { transform: translateX(calc(-50% + 110px)) translateY(-220px) rotate(-1deg); }
+        .envelope.move-away { transform: translateX(-53px) rotateZ(-1deg); opacity: 0.28; }
+        .card h1 { font-size: 18px; }
+        .card h2 { font-size: 16px; }
+    }
+
+    /* small decorative seam */
+    .envelope::after {
+        content: '';
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 12px;
+        height: 2px;
+        background: rgba(255,255,255,0.06);
+        z-index: 1;
+        border-radius: 2px;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="envelope" id="envelope" tabindex="0" role="button" aria-pressed="false" aria-label="Open wedding invitation">
+    <div class="top-flap" aria-hidden="true"></div>
+
+    <div class="pocket">
+        <div class="card">
+        <div class="card-face">
+        <button class="close-btn" aria-label="Close invitation">×</button>
+        <button class="next-btn" aria-label="Reveal back">→</button>
+        <h1>Wedding Invitation</h1>
+        <h2>Emily & Daniel</h2>
+        <p>You are joyfully invited to celebrate<br>
+        the union of two hearts.</p>
+        <p><strong>April 14, 2026</strong><br>
+        4:00 PM • Rose Garden Hall</p>
+        <p>Reception to follow</p>
+        </div>
+    </div>
+    </div>
+</div>
+
+<script>
+    const envelope = document.getElementById("envelope");
+    const pocket = envelope.querySelector('.pocket');
+    const card = envelope.querySelector('.card');
+    const closeBtn = card.querySelector('.close-btn');
+
+    const cardSlideDuration = 900; // ms - should match CSS transition
+    let detached = false;
+
+    function detachCard() {
+        const rect = card.getBoundingClientRect();
+        // ensure we start detached showing the front/background (clear any flip state)
+        card.classList.remove('back-up');
+        card.classList.remove('front-up');
+        card.style.position = 'fixed';
+        card.style.left = rect.left + 'px';
+        card.style.top = rect.top + 'px';
+        card.style.width = rect.width + 'px';
+        // let the card height adapt to its content, but cap it to viewport
+        card.style.height = 'auto';
+        const viewportPadding = window.innerWidth <= 480 ? 40 : 60;
+        // cap detached card height to viewport minus padding so it can't become enormous
+        card.style.maxHeight = Math.min(window.innerHeight - viewportPadding, rect.height) + 'px';
+        card.style.overflow = 'hidden';
+        card.style.margin = '0';
+        card.style.transform = 'none';
+        card.classList.add('floating');
+        document.body.appendChild(card);
+        // size the detached card to 75% of the viewport width but preserve
+        // the image aspect ratio (priority). We load back.jpeg (fallback to
+        // background.jpeg) and compute height = width * (naturalH/naturalW).
+        try {
+            const targetVW = Math.max(0.05, Math.min(0.95, 0.75)); // 75% target
+            const viewportW = window.innerWidth;
+            const viewportH = window.innerHeight;
+            const maxWidthPx = Math.min(1000, Math.floor(viewportW * targetVW));
+
+            function applySizing(imgW, imgH) {
+                // compute desired width and height preserving aspect ratio
+                let desiredWidth = Math.floor(viewportW * targetVW);
+                desiredWidth = Math.min(desiredWidth, maxWidthPx);
+                let desiredHeight = Math.round(desiredWidth * (imgH / imgW));
+
+                // If desired height is too tall for viewport, scale down to fit
+                const availableH = Math.max(100, viewportH - 80);
+                if (desiredHeight > availableH) {
+                    const scale = availableH / desiredHeight;
+                    desiredHeight = Math.round(desiredHeight * scale);
+                    desiredWidth = Math.round(desiredWidth * scale);
+                }
+
+                card.style.width = desiredWidth + 'px';
+                card.style.height = desiredHeight + 'px';
+                card.style.maxWidth = maxWidthPx + 'px';
+                // center in viewport
+                card.style.left = '50%';
+                card.style.top = '50%';
+                card.style.transform = 'translate(-50%, -50%)';
+            }
+
+            const probe = new Image();
+            probe.src = 'back.jpeg';
+            let loaded = false;
+            probe.onload = function () {
+                loaded = true;
+                applySizing(probe.naturalWidth || 1, probe.naturalHeight || 1);
+                // If the back image is smaller than the computed size, prefer contain
+                if (probe.naturalWidth < (viewportW * targetVW) || probe.naturalHeight < (viewportH * targetVW)) {
+                    card.classList.add('use-contain');
+                }
+            };
+            probe.onerror = function () {
+                // fallback to card-face background if back.jpeg fails
+                const fallback = new Image();
+                fallback.src = 'background.jpeg';
+                fallback.onload = function () {
+                    applySizing(fallback.naturalWidth || 1, fallback.naturalHeight || 1);
+                    if (fallback.naturalWidth < (viewportW * targetVW) || fallback.naturalHeight < (viewportH * targetVW)) {
+                        card.classList.add('use-contain');
+                    }
+                };
+                fallback.onerror = function () {
+                    // final fallback: use 75vw and auto height (maintain previous behavior)
+                    card.style.width = '75vw';
+                    card.style.height = 'auto';
+                    card.style.left = '50%';
+                    card.style.top = '50%';
+                    card.style.transform = 'translate(-50%, -50%)';
+                };
+            };
+            // If the image is already cached and loaded, onload may not fire; check readyState
+            if (probe.complete && probe.naturalWidth) {
+                applySizing(probe.naturalWidth, probe.naturalHeight);
+                if (probe.naturalWidth < (viewportW * targetVW) || probe.naturalHeight < (viewportH * targetVW)) {
+                    card.classList.add('use-contain');
+                }
+            }
+        } catch (e) {
+            // fallback: use 75vw centered
+            card.style.width = '75vw';
+            card.style.height = 'auto';
+            card.style.left = '50%';
+            card.style.top = '50%';
+            card.style.transform = 'translate(-50%, -50%)';
+        }
+        // focus the close button for accessibility when detached
+        const cb = card.querySelector('.close-btn');
+        if (cb) cb.focus();
+        detached = true;
+    }
+
+    function reattachCard() {
+        // quick reset: append back to pocket and clear inline styles
+        pocket.appendChild(card);
+        card.style.position = '';
+        card.style.left = '';
+        card.style.top = '';
+        card.style.width = '';
+        card.style.height = '';
+        card.style.maxHeight = '';
+        card.style.overflow = '';
+        card.style.margin = '';
+        card.style.transform = '';
+        card.style.maxWidth = '';
+        card.classList.remove('floating');
+        detached = false;
+    }
+
+    let _cardTransitionHandler = null;
+
+    function onCardTransitionEnd(e) {
+        // wait for the transform transition to finish and only when opening
+        if (e.propertyName && e.propertyName.indexOf('transform') === -1) return;
+        if (!envelope.classList.contains('open')) return;
+        // detach once when the slide-out transform completes
+        detachCard();
+        // short delay then move the envelope away for a nicer sequence
+        setTimeout(() => envelope.classList.add('move-away'), 80);
+        if (_cardTransitionHandler) {
+            card.removeEventListener('transitionend', _cardTransitionHandler);
+            _cardTransitionHandler = null;
+        }
+    }
+
+    function toggleEnvelope() {
+        const open = envelope.classList.toggle('open');
+        envelope.setAttribute('aria-pressed', String(open));
+
+        if (open) {
+            // listen for the card's transform transition to finish, then detach
+            if (_cardTransitionHandler) card.removeEventListener('transitionend', _cardTransitionHandler);
+            _cardTransitionHandler = onCardTransitionEnd;
+            card.addEventListener('transitionend', _cardTransitionHandler);
+        } else {
+            // closing: bring envelope back and reattach card
+            envelope.classList.remove('move-away');
+            // remove any pending transition handler
+            if (_cardTransitionHandler) {
+                card.removeEventListener('transitionend', _cardTransitionHandler);
+                _cardTransitionHandler = null;
+            }
+            // if card was detached, reattach it immediately
+            if (detached) reattachCard();
+            // also remove the flip states when closing
+            card.classList.remove('front-up');
+            card.classList.remove('back-up');
+        }
+    }
+
+    // flip only the front overlay (like lifting tracing paper)
+    card.addEventListener('click', (e) => {
+        if (card.classList.contains('floating')) {
+            e.stopPropagation();
+            // toggle front only; if back is visible, hide it first
+            if (card.classList.contains('back-up')) {
+                card.classList.remove('back-up');
+            }
+            card.classList.toggle('front-up');
+        }
+    });
+
+    // Next / Reveal-back button behavior (only when detached)
+    const nextBtn = card.querySelector('.next-btn');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!card.classList.contains('back-up')) {
+                // add back-up first — CSS will rotate the front away and bring the back forward
+                card.classList.add('back-up');
+                // if the card is floating, allow the back layers to extend beyond
+                // the card box by making overflow visible (inline style overrides CSS)
+                if (card.classList.contains('floating')) {
+                    card.style.overflow = 'visible';
+                }
+                // remove any front-up class shortly after to keep class state tidy
+                // give the back a small fraction of time to start its rotation
+                setTimeout(() => card.classList.remove('front-up'), 160);
+            } else {
+                card.classList.remove('back-up');
+                // restore overflow to hidden so the card keeps its clean edges
+                if (card.classList.contains('floating')) {
+                    card.style.overflow = 'hidden';
+                }
+            }
+        });
+    }
+
+    envelope.addEventListener('click', toggleEnvelope);
+
+    // close button behavior (when detached)
+    if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            envelope.classList.remove('open');
+            envelope.classList.remove('move-away');
+            envelope.setAttribute('aria-pressed', 'false');
+            if (detached) reattachCard();
+            // clear any flip states
+            card.classList.remove('front-up');
+            card.classList.remove('back-up');
+        });
+    }
+
+    // keyboard accessibility: Enter/Space toggles, Esc closes
+    envelope.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleEnvelope();
+        } else if (e.key === 'Escape') {
+            envelope.classList.remove('open');
+            envelope.classList.remove('move-away');
+            envelope.setAttribute('aria-pressed', 'false');
+            if (detached) reattachCard();
+        }
+    });
+</script>
+
+<script>
+// Check back.jpeg intrinsic size and avoid upscaling if it's smaller than the card.
+document.addEventListener('DOMContentLoaded', function () {
+    const card = document.querySelector('.card');
+    if (!card) return;
+    // Probe back.jpeg first, then fallback to background.jpeg. Decide to use
+    // `contain` when the image would be upscaled or its aspect ratio differs
+    // significantly from the card (to avoid cropping important parts).
+    function inspectAndMaybeContain(url) {
+        return new Promise((resolve) => {
+            const probe = new Image();
+            probe.src = url;
+            probe.onload = function () { resolve(probe); };
+            probe.onerror = function () { resolve(null); };
+            // In some browsers cached images may be already complete
+            if (probe.complete && probe.naturalWidth) resolve(probe);
+        });
+    }
+
+    (async function () {
+        try {
+            const rect = card.getBoundingClientRect();
+            const renderedWidth = rect.width * (window.devicePixelRatio || 1);
+            const renderedHeight = rect.height * (window.devicePixelRatio || 1);
+            const cardAspect = renderedWidth / renderedHeight;
+
+            let probe = await inspectAndMaybeContain('back.jpeg');
+            if (!probe) probe = await inspectAndMaybeContain('background.jpeg');
+
+            if (!probe) {
+                console.warn('Could not load back.jpeg or background.jpeg to inspect resolution. Leaving background-size as-is.');
+                return;
+            }
+
+            const imgW = probe.naturalWidth || 1;
+            const imgH = probe.naturalHeight || 1;
+            const imgAspect = imgW / imgH;
+
+            // If image is smaller than rendered size -> avoid upscaling
+            const willUpscale = (imgW < renderedWidth) || (imgH < renderedHeight);
+            // If aspect ratio deviates significantly, prefer contain to avoid cropping
+            const aspectDiff = Math.abs(imgAspect - cardAspect) / Math.max(imgAspect, cardAspect);
+            const aspectThreshold = 0.12; // 12% relative difference
+
+            if (willUpscale || aspectDiff > aspectThreshold) {
+                card.classList.add('use-contain');
+                console.warn('Using `contain` for card backgrounds. reason=', (willUpscale ? 'upscale' : '') + (aspectDiff>aspectThreshold ? (willUpscale ? ' + aspect-diff' : 'aspect-diff') : ''), ' img:', imgW + 'x' + imgH, 'card:', Math.round(renderedWidth) + 'x' + Math.round(renderedHeight));
+            }
+        } catch (err) {
+            console.error('Error while deciding contain/cover for card images:', err);
+        }
+    })();
+});
+</script>
+
+</body>
+</html>
