@@ -8,20 +8,29 @@
         font-family: 'Georgia', serif;
         background: #f8e8e8;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
-        height: 100vh;
+        min-height: 100vh;
         margin: 0;
+        padding: 24px 16px;
+        gap: 28px;
     }
 
     .envelope {
         width: 350px;
         height: 280px;
-        background: #d4a373;
+        background: #2a2a2a; /* slate charcoal */
+        background-image:
+            radial-gradient(120% 160% at 50% 10%, rgba(255,255,255,0.06), rgba(0,0,0,0) 60%),
+            radial-gradient(180% 140% at 50% 120%, rgba(255,255,255,0.03), rgba(0,0,0,0) 45%),
+            repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 2px),
+            repeating-linear-gradient(90deg, rgba(255,255,255,0.01) 0, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 2px);
+        background-blend-mode: soft-light, soft-light, overlay, screen; /* lift overall brightness */
         position: relative;
         cursor: pointer;
         border-radius: 5px;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.28); /* lighter depth */
         perspective: 1200px;
         overflow: visible;
         transition: transform 1400ms ease, opacity 1400ms ease;
@@ -30,7 +39,12 @@
     .top-flap {
         width: 100%;
         height: 100%;
-        background: linear-gradient(180deg,#edc39a,#e6b17e);
+        background:
+            radial-gradient(120% 160% at 50% 10%, rgba(255,255,255,0.06), rgba(0,0,0,0) 60%),
+            radial-gradient(180% 140% at 50% 120%, rgba(255,255,255,0.03), rgba(0,0,0,0) 45%),
+            repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 2px),
+            repeating-linear-gradient(90deg, rgba(255,255,255,0.01) 0, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 2px),
+            linear-gradient(180deg, #2f2f2f, #262626 40%, #202020); /* lighter slate gradient */
         position: absolute;
         top: 0;
         transform-origin: left center;
@@ -38,6 +52,8 @@
         transition: transform 800ms cubic-bezier(.2,.9,.28,1);
         z-index: 3;
         box-shadow: inset 0 -6px 10px rgba(0,0,0,0.06);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
     }
 
     .card {
@@ -182,9 +198,9 @@
     /* card slides out to the right when opening */
     .open .card {
         /* move the card out to the right but keep it closer to center */
-        transform: translateX(calc(-50% + 180px)) translateY(-360px) rotate(-1deg);
+        transform: translateX(-50%) translateY(-360px) rotate(-1deg);
         box-shadow: 0 22px 40px rgba(0,0,0,0.28);
-        z-index: 4;
+        z-index: 12;
     }
 
     /* allow the card to show outside the pocket when open */
@@ -194,6 +210,47 @@
     .envelope.move-away {
         transform: translateX(-120px) rotateZ(-1deg);
         opacity: 0.18;
+    }
+
+    /* RSVP / Details section styling */
+    .rsvp-section {
+        width: min(720px, 92vw);
+        margin-top: 56px;
+    }
+    .rsvp-card {
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        padding: 16px;
+        box-sizing: border-box;
+    }
+    .rsvp-header {
+        margin: 0 0 12px 0;
+        font-size: 20px;
+        color: #2a2a2a;
+        text-align: center;
+    }
+    .rsvp-sub {
+        margin: 0 0 16px 0;
+        font-size: 14px;
+        color: #666;
+        text-align: center;
+    }
+    .form-embed {
+        position: relative;
+        width: 100%;
+        min-height: 760px; /* typical Google Forms height */
+        border-radius: 6px;
+        overflow: hidden;
+        background: #fafafa;
+        border: 1px solid rgba(0,0,0,0.06);
+    }
+    .form-embed iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
     }
 
     /* pocket masks the card when closed */
@@ -262,7 +319,7 @@
         display: none;
         background: transparent;
         border: none;
-        font-size: 18px;
+        font-size: 19px;
         line-height: 1;
         padding: 6px;
         cursor: pointer;
@@ -273,15 +330,17 @@
         position: absolute;
         bottom: 10px;
         right: 10px;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
+        min-height: 44px;
+        padding: 8px 14px;
+        border-radius: 22px;
         background: #fff;
         border: 1px solid rgba(0,0,0,0.08);
-        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-        display: flex;
+        box-shadow: 0 8px 22px rgba(0,0,0,0.14);
+        display: inline-flex;
         align-items: center;
         justify-content: center;
+        gap: 6px;
+        white-space: nowrap;
         color: #555;
     }
 
@@ -293,7 +352,7 @@
     @media (max-width: 720px) {
         .envelope { width: 320px; height: 260px; }
         .card { width: 384px; height: 500px; bottom: -330px; }
-        .open .card { transform: translateX(calc(-50% + 170px)) translateY(-320px) rotate(-1deg); }
+        .open .card { transform: translateX(-50%) translateY(-320px) rotate(-1deg); }
         .envelope.move-away { transform: translateX(-110px) rotateZ(-1deg); }
     }
 
@@ -303,14 +362,14 @@
         .card { width: 360px; height: 468px; bottom: -300px; --card-padding: 28px; padding: var(--card-padding); }
         .card h1 { font-size: 20px; }
         .card h2 { font-size: 18px; }
-        .open .card { transform: translateX(calc(-50% + 140px)) translateY(-290px) rotate(-1deg); }
+        .open .card { transform: translateX(-50%) translateY(-290px) rotate(-1deg); }
         .envelope.move-away { transform: translateX(-66px) rotateZ(-1deg); opacity: 0.22; }
     }
 
     @media (max-width: 360px) {
         .envelope { width: 240px; height: 260px; }
         .card { width: 300px; height: 390px; bottom: -240px; --card-padding: 20px; padding: var(--card-padding); }
-        .open .card { transform: translateX(calc(-50% + 110px)) translateY(-220px) rotate(-1deg); }
+        .open .card { transform: translateX(-50%) translateY(-220px) rotate(-1deg); }
         .envelope.move-away { transform: translateX(-53px) rotateZ(-1deg); opacity: 0.28; }
         .card h1 { font-size: 18px; }
         .card h2 { font-size: 16px; }
@@ -324,9 +383,46 @@
         right: 10px;
         bottom: 12px;
         height: 2px;
-        background: rgba(255,255,255,0.06);
+        background: rgba(255,255,255,0.12);
         z-index: 1;
         border-radius: 2px;
+    }
+
+    /* Silvery embossed logo/text on the flap using blend (robust across browsers) */
+    .top-flap::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        /* Render the image itself, invert + screen to brighten only former dark text */
+        background: url('envelope.jpeg') center / 70% auto no-repeat;
+        mix-blend-mode: screen;
+        filter:
+            invert(1)
+            grayscale(1)
+            brightness(1.2)
+            contrast(1.25)
+            drop-shadow(-1px -1px 0 rgba(255,255,255,0.28))
+            drop-shadow(1px 1px 0 rgba(0,0,0,0.32));
+        opacity: 0.9;
+        z-index: 4;
+    }
+
+    /* Slight darker emboss edge using multiply in a separate overlay */
+    .top-flap::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: url('envelope.jpeg') center / 70% auto no-repeat;
+        mix-blend-mode: multiply;
+        filter:
+            grayscale(1)
+            brightness(0.9)
+            contrast(1.1)
+            blur(0.2px);
+        opacity: 0.35;
+        z-index: 4;
     }
 </style>
 </head>
@@ -340,7 +436,10 @@
         <div class="card">
         <div class="card-face">
         <button class="close-btn" aria-label="Close invitation">×</button>
-        <button class="next-btn" aria-label="Reveal back">→</button>
+        <button class="next-btn" aria-label="Mai multe detalii">
+        <span class="label">Detalii eveniment</span>
+        <span aria-hidden="true">→</span>
+        </button>
         <h1>Wedding Invitation</h1>
         <h2>Emily & Daniel</h2>
         <p>You are joyfully invited to celebrate<br>
@@ -352,6 +451,22 @@
     </div>
     </div>
 </div>
+
+<!-- Event details / RSVP (Google Forms) -->
+<section class="rsvp-section" aria-labelledby="detalii-eveniment">
+    <div class="rsvp-card">
+        <h3 id="detalii-eveniment" class="rsvp-header">Detalii eveniment</h3>
+        <p class="rsvp-sub">Vă rugăm să completați formularul de mai jos.</p>
+        <div class="form-embed">
+            <!-- Replace the src below with your actual Google Forms embed URL -->
+            <iframe
+                title="Formular Detalii Eveniment"
+                loading="lazy"
+                src="https://docs.google.com/forms/d/e/1FAIpQLScmmoa0fzTtok8NeqTTp3kR2ihiBk6sxrLuvPODDIr0tvzERQ/viewform?embedded=true">
+            </iframe>
+        </div>
+    </div>
+    </section>
 
 <script>
     const envelope = document.getElementById("envelope");
